@@ -6,7 +6,7 @@
 [![CI](https://github.com/tlambert03/griffe-fieldz/actions/workflows/ci.yml/badge.svg)](https://github.com/tlambert03/griffe-fieldz/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/tlambert03/griffe-fieldz/branch/main/graph/badge.svg)](https://codecov.io/gh/tlambert03/griffe-fieldz)
 
-Griffe extension adding support for data-class like things (pydantic, attrs, etc...). This extension will inject the fields of the data-class into the documentation.
+Griffe extension adding support for data-class like things (pydantic, attrs, etc...). This extension will inject the fields of the data-class into the documentation, preventing you from duplicating field metadata in your docstrings.
 
 It supports anything that [fieldz](https://github.com/pyapp-kit/fieldz) supports, which is currently:
 
