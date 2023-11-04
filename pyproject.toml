@@ -31,9 +31,14 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Documentation",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Utilities",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = ["griffe>=0.35", "fieldz>=0.0.2"]
+
 
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
@@ -42,9 +47,9 @@ dev = [
     "black",
     "ipython",
     "mypy",
-    "pdbpp",  # https://github.com/pdbpp/pdbpp
+    "pdbpp",      # https://github.com/pdbpp/pdbpp
     "pre-commit",
-    "rich",  # https://github.com/Textualize/rich
+    "rich",       # https://github.com/Textualize/rich
     "ruff",
 ]
 
@@ -119,8 +124,4 @@ show_missing = true
 source = ["griffe_fieldz"]
 
 [tool.check-manifest]
-ignore = [
-    ".pre-commit-config.yaml",
-    ".ruff_cache/**/*",
-    "tests/**/*",
-]
+ignore = [".pre-commit-config.yaml", ".ruff_cache/**/*", "tests/**/*"]
