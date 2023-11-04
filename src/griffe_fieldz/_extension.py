@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import inspect
+from operator import ge
 from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
 import fieldz
@@ -33,11 +34,13 @@ class FieldzExtension(Extension):
         self,
         object_paths: list[str] | None = None,
         include_private: bool = False,
+        include_inherited: bool = False,
         **kwargs: Any,
     ) -> None:
         self.object_paths = object_paths
         self._kwargs = kwargs
         self.include_private = include_private
+        self.include_inherited = include_inherited
 
     def on_class_instance(self, *, node: ast.AST | ObjectNode, cls: Class) -> None:
         if isinstance(node, ObjectNode):
@@ -68,6 +71,10 @@ class FieldzExtension(Extension):
 
         # collect field info
         fields = fieldz.fields(runtime_obj)
+        if not self.include_inherited:
+            annotations = getattr(runtime_obj, "__annotations__", {})
+            fields = tuple(f for f in fields if f.name in annotations)
+
         params, attrs = _fields_to_params(fields, obj.docstring, self.include_private)
 
         # merge/add field info to docstring
@@ -104,7 +111,9 @@ def _default_repr(field: fieldz.Field) -> str | None:
 
 
 def _fields_to_params(
-    fields: Iterable[fieldz.Field], docstring: Docstring, include_private: bool = False
+    fields: Iterable[fieldz.Field],
+    docstring: Docstring,
+    include_private: bool = False,
 ) -> tuple[list[DocstringParameter], list[DocstringAttribute]]:
     """Get all docstring attributes and parameters for fields."""
     params: list[DocstringParameter] = []
