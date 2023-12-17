@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import inspect
+import textwrap
 from operator import ge
 from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
@@ -119,10 +120,11 @@ def _fields_to_params(
     params: list[DocstringParameter] = []
     attrs: list[DocstringAttribute] = []
     for field in fields:
+        description = field.description or field.metadata.get("description", "")
         kwargs: dict = {
             "name": field.name,
             "annotation": _to_annotation(field.type, docstring),
-            "description": field.description or field.metadata.get("description", ""),
+            "description": textwrap.dedent(description).strip(),
             "value": _default_repr(field),
         }
         if field.init:
