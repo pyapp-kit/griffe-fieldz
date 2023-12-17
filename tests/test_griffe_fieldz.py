@@ -1,9 +1,6 @@
 """Tests for the Griffe extension."""
 
-from griffe.docstrings.dataclasses import (
-    DocstringParameter,
-    DocstringSectionParameters,
-)
+from griffe.docstrings.dataclasses import DocstringParameter, DocstringSectionParameters
 from griffe.expressions import ExprName
 from griffe.extensions import Extensions
 from griffe.loader import GriffeLoader
@@ -13,7 +10,7 @@ from griffe_fieldz import FieldzExtension
 
 def test_extension() -> None:
     loader = GriffeLoader(extensions=Extensions(FieldzExtension()))
-    fake_mod = loader.load_module("tests.fake_module")
+    fake_mod = loader.load("tests.fake_module")
     sections = fake_mod["SomeDataclass"].docstring.parsed
     assert len(sections) == 2
     sec1 = sections[1]

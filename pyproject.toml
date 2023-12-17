@@ -54,8 +54,8 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://github.com/tlambert03/griffe-fieldz"
-repository = "https://github.com/tlambert03/griffe-fieldz"
+homepage = "https://github.com/pyapp-kit/griffe-fieldz"
+repository = "https://github.com/pyapp-kit/griffe-fieldz"
 
 # https://docs.astral.sh/ruff
 [tool.ruff]
