@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import inspect
 import textwrap
-from operator import ge
 from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
 import fieldz
