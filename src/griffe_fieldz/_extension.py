@@ -8,28 +8,32 @@ from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
 import fieldz
 from fieldz._repr import display_as_type
-from griffe import Class, Extension, Object, ObjectNode, dynamic_import, get_logger
-from griffe.dataclasses import Docstring
-from griffe.docstrings.dataclasses import (
+from griffe import (
+    Class,
+    Docstring,
     DocstringAttribute,
     DocstringParameter,
     DocstringSection,
     DocstringSectionAttributes,
     DocstringSectionParameters,
+    Extension,
+    Object,
+    ObjectNode,
+    dynamic_import,
+    get_logger,
+    parse_docstring_annotation,
 )
-from griffe.docstrings.utils import parse_annotation
 
 if TYPE_CHECKING:
     import ast
 
-    from griffe.expressions import Expr
-    from pydantic import BaseModel
+    from griffe import Expr, Inspector, Visitor
 
 logger = get_logger(__name__)
 
 
 class FieldzExtension(Extension):
-    """Griffe extension that reads documentation from `typing.Doc`."""
+    """Griffe extension that injects field information for dataclass-likes."""
 
     def __init__(
         self,
@@ -43,7 +47,14 @@ class FieldzExtension(Extension):
         self.include_private = include_private
         self.include_inherited = include_inherited
 
-    def on_class_instance(self, *, node: ast.AST | ObjectNode, cls: Class) -> None:
+    def on_class_instance(
+        self,
+        *,
+        node: ast.AST | ObjectNode,
+        cls: Class,
+        agent: Visitor | Inspector,
+        **kwargs: Any,
+    ) -> None:
         if isinstance(node, ObjectNode):
             return  # skip runtime objects
 
@@ -63,7 +74,9 @@ class FieldzExtension(Extension):
             return
         self._inject_fields(cls, runtime_obj)
 
-    def _inject_fields(self, obj: Object, runtime_obj: type[BaseModel]) -> None:
+    # ------------------------------
+
+    def _inject_fields(self, obj: Object, runtime_obj: Any) -> None:
         # update the object instance with the evaluated docstring
         docstring = inspect.cleandoc(getattr(runtime_obj, "__doc__", "") or "")
         if not obj.docstring:
@@ -98,7 +111,9 @@ class FieldzExtension(Extension):
 def _to_annotation(type_: Any, docstring: Docstring) -> str | Expr | None:
     """Create griffe annotation for a type."""
     if type_:
-        return parse_annotation(display_as_type(type_, modern_union=True), docstring)
+        return parse_docstring_annotation(
+            display_as_type(type_, modern_union=True), docstring
+        )
     return None
 
 
@@ -120,7 +135,7 @@ def _fields_to_params(
     params: list[DocstringParameter] = []
     attrs: list[DocstringAttribute] = []
     for field in fields:
-        description = field.description or field.metadata.get("description", "")
+        description = field.description or field.metadata.get("description", "") or ""
         kwargs: dict = {
             "name": field.name,
             "annotation": _to_annotation(field.type, docstring),
