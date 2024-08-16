@@ -1,9 +1,12 @@
 """Tests for the Griffe extension."""
 
-from griffe.docstrings.dataclasses import DocstringParameter, DocstringSectionParameters
-from griffe.expressions import ExprName
-from griffe.extensions import Extensions
-from griffe.loader import GriffeLoader
+from griffe import (
+    DocstringParameter,
+    DocstringSectionParameters,
+    ExprName,
+    Extensions,
+    GriffeLoader,
+)
 
 from griffe_fieldz import FieldzExtension
 
