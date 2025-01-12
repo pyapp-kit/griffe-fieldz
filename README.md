@@ -55,3 +55,8 @@ For example:
           extensions:
           - griffe_fieldz: {include_inherited: true}
 ```
+
+## Example
+
+As an example playground for using this plugin to document pydantic, attrs, and other
+dataclass-like objects, see: <https://github.com/tlambert03/fieldz-docs-example>
