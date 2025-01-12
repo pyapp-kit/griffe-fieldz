@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import textwrap
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
 import fieldz
@@ -13,7 +14,6 @@ from griffe import (
     Docstring,
     DocstringAttribute,
     DocstringParameter,
-    DocstringSection,
     DocstringSectionAttributes,
     DocstringSectionParameters,
     Extension,
@@ -121,8 +121,11 @@ def _default_repr(field: fieldz.Field) -> str | None:
     """Return a repr for a field default."""
     if field.default is not field.MISSING:
         return repr(field.default)
-    if field.default_factory is not field.MISSING:
-        return repr(field.default_factory())
+    if (factory := field.default_factory) is not field.MISSING:
+        if len(inspect.signature(factory).parameters) == 0:
+            with suppress(Exception):
+                return repr(factory())
+        return "<dynamic>"
     return None
 
 
@@ -135,26 +138,44 @@ def _fields_to_params(
     params: list[DocstringParameter] = []
     attrs: list[DocstringAttribute] = []
     for field in fields:
-        description = field.description or field.metadata.get("description", "") or ""
-        kwargs: dict = {
-            "name": field.name,
-            "annotation": _to_annotation(field.type, docstring),
-            "description": textwrap.dedent(description).strip(),
-            "value": _default_repr(field),
-        }
-        if field.init:
-            params.append(DocstringParameter(**kwargs))
-        elif include_private or not field.name.startswith("_"):
-            attrs.append(DocstringAttribute(**kwargs))
+        try:
+            desc = field.description or field.metadata.get("description", "") or ""
+            if not desc and (doc := getattr(field.default_factory, "__doc__", None)):
+                desc = inspect.cleandoc(doc) or ""
+
+            kwargs: dict = {
+                "name": field.name,
+                "annotation": _to_annotation(field.type, docstring),
+                "description": textwrap.dedent(desc).strip(),
+                "value": _default_repr(field),
+            }
+            if field.init:
+                params.append(DocstringParameter(**kwargs))
+            elif include_private or not field.name.startswith("_"):
+                attrs.append(DocstringAttribute(**kwargs))
+        except Exception as exc:
+            logger.warning("Failed to parse field %s: %s", field.name, exc)
 
     return params, attrs
 
 
 def _merge(
-    section: DocstringSection, field_params: Sequence[DocstringParameter]
+    existing_section: DocstringSectionParameters | DocstringSectionAttributes,
+    field_params: Sequence[DocstringParameter],
 ) -> None:
     """Update DocstringSection with field params (if missing)."""
-    existing_names = {x.name for x in section.value}
+    existing_members = {x.name: x for x in existing_section.value}
+
     for param in field_params:
-        if param.name not in existing_names:
-            section.value.append(param)
+        if existing := existing_members.get(param.name):
+            # if the field already exists ...
+            # extend missing attributes with the values from the fieldz params
+            if existing.value is None and param.value is not None:
+                existing.value = param.value
+            if existing.description is None and param.description:
+                existing.description = param.description
+            if existing.annotation is None and param.annotation is not None:
+                existing.annotation = param.annotation
+        else:
+            # otherwise, add the missing fields
+            existing_section.value.append(param)  # type: ignore
