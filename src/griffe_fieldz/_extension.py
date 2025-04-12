@@ -31,6 +31,10 @@ if TYPE_CHECKING:
 
     from griffe import Expr, Inspector, Visitor
 
+    AddFieldsTo = Literal[
+        "docstring-parameters", "docstring-attributes", "class-attributes"
+    ]
+
 logger = get_logger("griffe-fieldz")
 
 
@@ -42,13 +46,33 @@ class FieldzExtension(Extension):
         object_paths: list[str] | None = None,
         include_private: bool = False,
         include_inherited: bool = False,
+        add_fields_to: AddFieldsTo = "docstring-parameters",
+        remove_fields_from_members: bool = False,
         **kwargs: Any,
     ) -> None:
-        breakpoint()
         self.object_paths = object_paths
         self._kwargs = kwargs
+        if kwargs:
+            logger.warning(
+                "Unknown kwargs passed to FieldzExtension: %s", ", ".join(kwargs)
+            )
         self.include_private = include_private
         self.include_inherited = include_inherited
+
+        self.remove_fields_from_members = remove_fields_from_members
+        if add_fields_to not in (
+            "docstring-parameters",
+            "docstring-attributes",
+            "class-attributes",
+        ):
+            logger.error(
+                "'add_fields_to' must be one of {'docstring-parameters', "
+                f"'docstring-attributes', or 'class-attributes'}}, not {add_fields_to}."
+                "\n\nDefaulting to 'docstring-parameters'."
+            )
+            add_fields_to = "docstring-parameters"
+
+        self.add_fields_to = add_fields_to
 
     def on_class_members(
         self,
@@ -91,7 +115,13 @@ class FieldzExtension(Extension):
             annotations = getattr(runtime_obj, "__annotations__", {})
             fields = tuple(f for f in fields if f.name in annotations)
 
-        _unify_fields(fields, griffe_obj, include_private=self.include_private)
+        _unify_fields(
+            fields,
+            griffe_obj,
+            include_private=self.include_private,
+            add_fields_to=self.add_fields_to,
+            remove_fields_from_members=self.remove_fields_from_members,
+        )
 
 
 def _to_annotation(type_: Any, docstring: Docstring) -> str | Expr | None:
@@ -137,24 +167,10 @@ class DocstringNamedElementKwargs(TypedDict):
 def _unify_fields(
     fields: Iterable[fieldz.Field],
     griffe_obj: Object,
-    include_private: bool = False,
-    add_fields_to: Literal[
-        "docstring-parameters",
-        "docstring-attributes",
-        "class-attributes",
-    ] = "docstring-parameters",
-    remove_field_from_members: bool = True,
+    include_private: bool,
+    add_fields_to: AddFieldsTo,
+    remove_fields_from_members: bool,
 ) -> None:
-    if add_fields_to not in (
-        "docstring-parameters",
-        "docstring-attributes",
-        "class-attributes",
-    ):
-        raise ValueError(
-            "union_fields_as must be one of 'docstring-parameters', "
-            f"'docstring-attributes', or 'class-attributes', not {add_fields_to}"
-        )
-
     docstring = cast("Docstring", griffe_obj.docstring)
     sections = docstring.parsed
 
@@ -178,7 +194,7 @@ def _unify_fields(
                 # remove from parameters if it exists
                 if p_sect := _get_section(sections, DocstringSectionParameters):
                     p_sect.value = [x for x in p_sect.value if x.name != field.name]
-                if remove_field_from_members:
+                if remove_fields_from_members:
                     # remove from griffe_obj.parameters
                     griffe_obj.members.pop(field.name, None)
                     griffe_obj.inherited_members.pop(field.name, None)
@@ -187,7 +203,7 @@ def _unify_fields(
                 # remove from attributes if it exists
                 if a_sect := _get_section(sections, DocstringSectionAttributes):
                     a_sect.value = [x for x in a_sect.value if x.name != field.name]
-                if remove_field_from_members:
+                if remove_fields_from_members:
                     # remove from griffe_obj.attributes
                     griffe_obj.members.pop(field.name, None)
                     griffe_obj.inherited_members.pop(field.name, None)
