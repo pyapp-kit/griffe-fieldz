@@ -86,9 +86,11 @@ select = [
     "RUF",  # ruff-specific rules
     "TC",   # flake8-type-checking
     "TID",  # flake8-tidy-imports
+    "ANN",  # flake8-annotations
 ]
 ignore = [
-    "D401", # First line should be in imperative mood (remove to opt in)
+    "D401",   # First line should be in imperative mood (remove to opt in)
+    "ANN401", # allow typing.Any
 ]
 
 [tool.ruff.lint.per-file-ignores]
