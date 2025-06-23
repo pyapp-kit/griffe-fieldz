@@ -19,11 +19,11 @@ name = "griffe-fieldz"
 dynamic = ["version"]
 description = "Griffe extension adding support for data-class like things (pydantic, attrs, etc...)"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "BSD-3-Clause" }
 authors = [{ name = "Talley Lambert", email = "talley.lambert@example.com" }]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -31,6 +31,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Documentation",
     "Topic :: Software Development",
     "Topic :: Software Development :: Documentation",
@@ -41,16 +42,21 @@ dependencies = ["griffe>=1.0", "fieldz>=0.1.0"]
 
 
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
-[project.optional-dependencies]
+[dependency-groups]
 test = ["pytest", "pytest-cov"]
 dev = [
+    { include-group = "test" },
     "ipython",
     "mypy",
-    "pdbpp",      # https://github.com/pdbpp/pdbpp
-    "pre-commit",
-    "rich",       # https://github.com/Textualize/rich
+    "pdbpp",                    # https://github.com/pdbpp/pdbpp
+    "pre-commit-uv",
+    "rich",                     # https://github.com/Textualize/rich
     "ruff",
 ]
+
+[tool.uv.sources]
+griffe-fieldz = { workspace = true }
+
 
 [project.urls]
 homepage = "https://github.com/pyapp-kit/griffe-fieldz"
@@ -61,6 +67,8 @@ repository = "https://github.com/pyapp-kit/griffe-fieldz"
 line-length = 88
 target-version = "py38"
 src = ["src"]
+fix = true
+unsafe-fixes = true
 
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
@@ -76,11 +84,13 @@ select = [
     "B",    # flake8-bugbear
     "A001", # flake8-builtins
     "RUF",  # ruff-specific rules
-    "TCH",  # flake8-type-checking
+    "TC",   # flake8-type-checking
     "TID",  # flake8-tidy-imports
+    "ANN",  # flake8-annotations
 ]
 ignore = [
-    "D401", # First line should be in imperative mood (remove to opt in)
+    "D401",   # First line should be in imperative mood (remove to opt in)
+    "ANN401", # allow typing.Any
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -89,7 +99,7 @@ ignore = [
 # https://docs.astral.sh/ruff/formatter/
 [tool.ruff.format]
 docstring-code-format = true
-skip-magic-trailing-comma = false  # default is false
+skip-magic-trailing-comma = false # default is false
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
@@ -103,6 +113,7 @@ pretty = true
 # https://docs.pytest.org/en/6.2.x/customize.html
 [tool.pytest.ini_options]
 minversion = "7.0"
+addopts = ["--color=yes"]
 testpaths = ["tests"]
 filterwarnings = ["error"]
 
