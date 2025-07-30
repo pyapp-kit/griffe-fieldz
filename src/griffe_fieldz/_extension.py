@@ -97,7 +97,7 @@ class FieldzExtension(Extension):
 
         try:
             fieldz.get_adapter(runtime_obj)
-        except TypeError:
+        except TypeError:  # pragma: no cover
             return
         self._inject_fields(cls, runtime_obj)
 
