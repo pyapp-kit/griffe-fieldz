@@ -47,13 +47,19 @@ You may use any of the following options, provided as a dictionary under the
 |---------------------|--------------------------------------------------|---------|
 | `include_inherited` | Include inherited fields in class parameters.    | `False` |
 | `include_private`   | Include private fields in the documentation.     | `False` |
+| `add_fields_to` | Where in the documentation to add the detected fields. Must be one of:<br><br>- `docstring-parameters`: add fields to the *Parameters* section of the docstring<br>- `docstring-attributes`: add fields to the *Attributes* section of the docstring<br>- `class-attributes`: add fields as class attributes | `docstring-parameters` |
+| `remove_fields_from_members` | If `True`, fields are *removed* as class members.  This is not encouraged (since fields are *indeed* class attributes), but will prevent duplication of the name in the docstring as well as the class.  This value is ignored if `add_fields_to` is `class-attributes`. | `False` |
 
 For example:
 
 ```yml
         options:
           extensions:
-          - griffe_fieldz: {include_inherited: true}
+          - griffe_fieldz:
+              include_inherited: false
+              include_private: false
+              add_fields_to: docstring-attributes
+              remove_fields_from_members: false
 ```
 
 ## Example
