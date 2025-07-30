@@ -146,7 +146,7 @@ def _default_repr(field: fieldz.Field) -> str | None:
             else:
                 if len(sig.parameters) == 0:
                     with suppress(Exception):
-                        return repr(factory())
+                        return repr(factory())  # type: ignore[call-arg]
 
             return "<dynamic>"
     except Exception as exc:
