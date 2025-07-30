@@ -72,7 +72,7 @@ class FieldzExtension(Extension):
             )
             add_fields_to = "docstring-parameters"
 
-        self.add_fields_to = add_fields_to
+        self.add_fields_to: AddFieldsTo = add_fields_to
 
     def on_class_members(
         self,
