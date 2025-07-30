@@ -124,7 +124,7 @@ def _default_repr(field: fieldz.Field) -> str | None:
     if (factory := field.default_factory) is not field.MISSING:
         if len(inspect.signature(factory).parameters) == 0:
             with suppress(Exception):
-                return repr(factory())
+                return repr(factory())  # type: ignore[call-arg]
         return "<dynamic>"
     return None
 
