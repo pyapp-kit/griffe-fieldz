@@ -64,7 +64,7 @@ class FieldzExtension(Extension):
             "docstring-parameters",
             "docstring-attributes",
             "class-attributes",
-        ):
+        ):  # pragma: no cover
             logger.error(
                 "'add_fields_to' must be one of {'docstring-parameters', "
                 f"'docstring-attributes', or 'class-attributes'}}, not {add_fields_to}."
@@ -149,7 +149,7 @@ def _default_repr(field: fieldz.Field) -> str | None:
                         return repr(factory())  # type: ignore[call-arg]
 
             return "<dynamic>"
-    except Exception as exc:
+    except Exception as exc:  # pragma: no cover
         logger.warning("Failed to get default repr for %s: %s", field.name, exc)
         pass
     return None
