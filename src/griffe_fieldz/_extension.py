@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import re
 import textwrap
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Iterable, Literal, TypedDict, TypeVar, cast
@@ -48,6 +49,7 @@ class FieldzExtension(Extension):
         include_inherited: bool = False,
         add_fields_to: AddFieldsTo = "docstring-parameters",
         remove_fields_from_members: bool = False,
+        strip_annotated: bool = False,
         **kwargs: Any,
     ) -> None:
         self.object_paths = object_paths
@@ -58,6 +60,7 @@ class FieldzExtension(Extension):
             )
         self.include_private = include_private
         self.include_inherited = include_inherited
+        self.strip_annotated = strip_annotated
 
         self.remove_fields_from_members = remove_fields_from_members
         if add_fields_to not in (
@@ -121,15 +124,33 @@ class FieldzExtension(Extension):
             include_private=self.include_private,
             add_fields_to=self.add_fields_to,
             remove_fields_from_members=self.remove_fields_from_members,
+            strip_annotated=self.strip_annotated,
         )
 
 
-def _to_annotation(type_: Any, docstring: Docstring) -> str | Expr | None:
+# Regex pattern to strip Annotated[T, ...] -> T
+_ANNOTATED_PATTERN = re.compile(
+    r"Annotated\[((?:[^\[\],]|\[[^\]]*\])+)(?:,\s*[^\]]+)*\]"
+)
+
+
+def _to_annotation(
+    type_: Any, docstring: Docstring, *, strip_annotated: bool = False
+) -> str | Expr | None:
     """Create griffe annotation for a type."""
     if type_:
-        return parse_docstring_annotation(
-            display_as_type(type_, modern_union=True), docstring
+        # ensure string representation.
+
+        type_str = (
+            type_
+            if isinstance(type_, str)
+            else display_as_type(type_, modern_union=True)
         )
+
+        if strip_annotated:
+            # Strip Annotated[T, ...] -> T
+            type_str = _ANNOTATED_PATTERN.sub(r"\1", type_str)
+        return parse_docstring_annotation(type_str, docstring)
     return None
 
 
@@ -170,6 +191,7 @@ def _unify_fields(
     include_private: bool,
     add_fields_to: AddFieldsTo,
     remove_fields_from_members: bool,
+    strip_annotated: bool,
 ) -> None:
     docstring = cast("Docstring", griffe_obj.docstring)
     sections = docstring.parsed
@@ -179,7 +201,9 @@ def _unify_fields(
             continue
 
         try:
-            item_kwargs = _merged_kwargs(field, docstring, griffe_obj)
+            item_kwargs = _merged_kwargs(
+                field, docstring, griffe_obj, strip_annotated=strip_annotated
+            )
 
             if add_fields_to == "class-attributes":
                 if field.name not in griffe_obj.attributes:
@@ -213,7 +237,11 @@ def _unify_fields(
 
 
 def _merged_kwargs(
-    field: fieldz.Field, docstring: Docstring, griffe_obj: Object
+    field: fieldz.Field,
+    docstring: Docstring,
+    griffe_obj: Object,
+    *,
+    strip_annotated: bool = False,
 ) -> DocstringNamedElementKwargs:
     desc = field.description or field.metadata.get("description", "") or ""
     if not desc and (doc := getattr(field.default_factory, "__doc__", None)):
@@ -227,7 +255,9 @@ def _merged_kwargs(
     return DocstringNamedElementKwargs(
         name=field.name,
         description=textwrap.dedent(desc).strip(),
-        annotation=_to_annotation(field.type, docstring),
+        annotation=_to_annotation(
+            field.type, docstring, strip_annotated=strip_annotated
+        ),
         value=_default_repr(field),
     )
 

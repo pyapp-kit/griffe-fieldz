@@ -72,3 +72,43 @@ def test_add_if_missing_merges() -> None:
     assert section.value[0].description == ""
     assert section.value[0].annotation == "ann"
     assert section.value[0].value == "val"
+
+
+def test_strip_annotated() -> None:
+    """Test that strip_annotated option works correctly."""
+    # Test with strip_annotated=False (default)
+    loader = GriffeLoader(extensions=Extensions(FieldzExtension()))
+    fake_mod = loader.load("tests.fake_module")
+    with_annotated = fake_mod["WithAnnotated"]
+    sections = with_annotated.docstring.parsed
+    params_section = None
+    for section in sections:
+        if isinstance(section, griffe.DocstringSectionParameters):
+            params_section = section
+            break
+
+    assert params_section is not None
+    param_dict = {p.name: p for p in params_section.value}
+
+    # With strip_annotated=False, should see "Annotated"
+    id_param = param_dict["id"]
+    assert "Annotated" in str(id_param.annotation)
+
+    # Test with strip_annotated=True
+    loader2 = GriffeLoader(extensions=Extensions(FieldzExtension(strip_annotated=True)))
+    fake_mod2 = loader2.load("tests.fake_module")
+    with_annotated2 = fake_mod2["WithAnnotated"]
+    sections2 = with_annotated2.docstring.parsed
+    params_section2 = None
+    for section in sections2:
+        if isinstance(section, griffe.DocstringSectionParameters):
+            params_section2 = section
+            break
+
+    assert params_section2 is not None
+    param_dict2 = {p.name: p for p in params_section2.value}
+
+    # With strip_annotated=True, should NOT see "Annotated"
+    id_param2 = param_dict2["id"]
+    assert "Annotated" not in str(id_param2.annotation)
+    assert "int" in str(id_param2.annotation)
