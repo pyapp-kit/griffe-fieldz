@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import inspect
-import re
 import textwrap
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Iterable, Literal, TypedDict, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Literal,
+    TypedDict,
+    TypeVar,
+    cast,
+)
 
 import fieldz
-from fieldz._repr import display_as_type
 from griffe import (
     Attribute,
     Class,
@@ -26,6 +32,8 @@ from griffe import (
     get_logger,
     parse_docstring_annotation,
 )
+
+from ._repr import display_as_type
 
 if TYPE_CHECKING:
     import ast
@@ -128,30 +136,62 @@ class FieldzExtension(Extension):
         )
 
 
-# Regex pattern to strip Annotated[T, ...] -> T
-_ANNOTATED_PATTERN = re.compile(
-    r"Annotated\[((?:[^\[\],]|\[[^\]]*\])+)(?:,\s*[^\]]+)*\]"
-)
-
-
 def _to_annotation(
     type_: Any, docstring: Docstring, *, strip_annotated: bool = False
 ) -> str | Expr | None:
     """Create griffe annotation for a type."""
     if type_:
         # ensure string representation.
-
-        type_str = (
-            type_
-            if isinstance(type_, str)
-            else display_as_type(type_, modern_union=True)
-        )
-
-        if strip_annotated:
-            # Strip Annotated[T, ...] -> T
-            type_str = _ANNOTATED_PATTERN.sub(r"\1", type_str)
+        if isinstance(type_, str):
+            type_str = type_
+            # Strip Annotated wrappers from string annotations if requested
+            if strip_annotated and "Annotated[" in type_str:
+                type_str = _strip_annotated_from_string(type_str)
+        else:
+            type_str = display_as_type(
+                type_, modern_union=True, strip_annotated=strip_annotated
+            )
         return parse_docstring_annotation(type_str, docstring)
     return None
+
+
+def _strip_annotated_from_string(type_str: str) -> str:
+    """Strip Annotated wrappers from string type annotations.
+
+    Examples: "Annotated[int, Gt]" -> "int",
+              "Annotated[list[Annotated[int, Interval]], Len]" -> "list[int]"
+    """
+    while (start := type_str.find("Annotated[")) != -1:
+        bracket_count = 0
+        for i in range(start + 10, len(type_str)):  # 10 = len("Annotated[")
+            if type_str[i] == "[":
+                bracket_count += 1
+            elif type_str[i] == "]" and bracket_count == 0:
+                # Extract first arg and replace Annotated[...] with it
+                first_arg = _extract_first_arg(type_str[start + 10 : i])
+                type_str = type_str[:start] + first_arg + type_str[i + 1 :]
+                break
+            elif type_str[i] == "]":
+                bracket_count -= 1
+        else:
+            break  # No matching bracket found
+    return type_str
+
+
+def _extract_first_arg(content: str) -> str:
+    """Extract first arg from comma-separated content, respecting brackets.
+
+    Examples: "int, Gt" -> "int", "list[int], Len" -> "list[int]"
+    """
+    bracket_count = 0
+    for i, char in enumerate(content):
+        if char == "[":
+            bracket_count += 1
+        elif char == "]":
+            bracket_count -= 1
+        elif char == "," and bracket_count == 0:
+            return content[:i].strip()
+    return content.strip()
 
 
 def _default_repr(field: fieldz.Field) -> str | None:
@@ -292,7 +332,9 @@ def _add_if_missing(
         current = existing[item.name]
         if current.description is None and item.description:
             current.description = item.description
-        if current.annotation is None and item.annotation:
+        # Always update annotation if we have one
+        # (to apply transformations like strip_annotated)
+        if item.annotation:
             current.annotation = item.annotation
         if current.value is None and item.value is not None:
             current.value = item.value

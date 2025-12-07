@@ -112,3 +112,29 @@ def test_strip_annotated() -> None:
     id_param2 = param_dict2["id"]
     assert "Annotated" not in str(id_param2.annotation)
     assert "int" in str(id_param2.annotation)
+
+
+def test_strip_annotated_union_forms() -> None:
+    """Test that different Annotated+Union forms produce the same output."""
+    from typing import Annotated
+
+    from griffe_fieldz._repr import display_as_type
+
+    # Mock constraint class
+    class SomeConstraint:
+        pass
+
+    # Two different ways to express the same thing
+    type1 = Annotated[int, SomeConstraint()] | None
+    type2 = Annotated[int | None, SomeConstraint()]
+
+    # Without stripping, they should be different
+    result1_no_strip = display_as_type(type1, modern_union=True, strip_annotated=False)
+    result2_no_strip = display_as_type(type2, modern_union=True, strip_annotated=False)
+    assert result1_no_strip != result2_no_strip
+
+    # With stripping, they should be the same
+    result1_strip = display_as_type(type1, modern_union=True, strip_annotated=True)
+    result2_strip = display_as_type(type2, modern_union=True, strip_annotated=True)
+    assert result1_strip == result2_strip
+    assert result1_strip == "int | None"
