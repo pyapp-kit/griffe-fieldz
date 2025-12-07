@@ -116,7 +116,8 @@ def test_strip_annotated() -> None:
 
 def test_strip_annotated_union_forms() -> None:
     """Test that different Annotated+Union forms produce the same output."""
-    from typing import Annotated
+    import sys
+    from typing import Annotated, Union
 
     from griffe_fieldz._repr import display_as_type
 
@@ -125,8 +126,14 @@ def test_strip_annotated_union_forms() -> None:
         pass
 
     # Two different ways to express the same thing
-    type1 = Annotated[int, SomeConstraint()] | None
-    type2 = Annotated[int | None, SomeConstraint()]
+    if sys.version_info >= (3, 10):
+        # Python 3.10+ supports | syntax
+        type1 = Annotated[int, SomeConstraint()] | None
+        type2 = Annotated[int | None, SomeConstraint()]
+    else:
+        # Python 3.9 needs Union syntax
+        type1 = Union[Annotated[int, SomeConstraint()], None]
+        type2 = Annotated[Union[int, None], SomeConstraint()]
 
     # Without stripping, they should be different
     result1_no_strip = display_as_type(type1, modern_union=True, strip_annotated=False)
