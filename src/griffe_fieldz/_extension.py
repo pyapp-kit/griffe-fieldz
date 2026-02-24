@@ -343,7 +343,11 @@ def _merged_kwargs(
     strip_annotated: bool = False,
 ) -> DocstringNamedElementKwargs:
     desc = field.description or field.metadata.get("description", "") or ""
-    if not desc and (doc := getattr(field.default_factory, "__doc__", None)):
+    if (
+        not desc
+        and field.default_factory is not field.MISSING
+        and (doc := getattr(field.default_factory, "__doc__", None))
+    ):
         desc = inspect.cleandoc(doc) or ""
 
     if not desc and field.name in griffe_obj.attributes:
