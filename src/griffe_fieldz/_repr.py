@@ -62,12 +62,14 @@ def display_as_type(
 
     if not isinstance(
         obj,
-        typing_base
-        | WithArgsTypes
-        | type
-        | TypeAliasType
-        | typing.TypeVar
-        | typing.NewType,
+        (
+            typing_base,
+            *WithArgsTypes,
+            type,
+            TypeAliasType,
+            typing.TypeVar,
+            typing.NewType,
+        ),
     ):
         obj = obj.__class__
 
