@@ -19,15 +19,13 @@ name = "griffe-fieldz"
 dynamic = ["version"]
 description = "Griffe extension adding support for data-class like things (pydantic, attrs, etc...)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "BSD-3-Clause" }
 authors = [{ name = "Talley Lambert", email = "talley.lambert@example.com" }]
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -44,15 +42,15 @@ dependencies = ["griffelib>=2.0", "fieldz>=0.1.0"]
 
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [dependency-groups]
-test = ["pytest", "pytest-cov"]
+test = ["pytest>=8.4.1", "pytest-cov>=6.2.1"]
 dev = [
     { include-group = "test" },
-    "ipython",
-    "mypy",
-    "pdbpp",                    # https://github.com/pdbpp/pdbpp
-    "pre-commit-uv",
-    "rich",                     # https://github.com/Textualize/rich
-    "ruff",
+    "ipython>=8.37.0",
+    "mypy>=1.16.1",
+    "pdbpp>=0.11.6 ; sys_platform != 'win32'",
+    "prek>=0.3.3",
+    "rich>=14.0.0",
+    "ruff>=0.12.0",
 ]
 
 [tool.uv.sources]
@@ -66,7 +64,7 @@ repository = "https://github.com/pyapp-kit/griffe-fieldz"
 # https://docs.astral.sh/ruff
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py310"
 src = ["src"]
 fix = true
 unsafe-fixes = true

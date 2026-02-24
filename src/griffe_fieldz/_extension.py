@@ -8,7 +8,6 @@ from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
     Any,
-    Iterable,
     Literal,
     TypedDict,
     TypeVar,
@@ -37,6 +36,7 @@ from ._repr import display_as_type
 
 if TYPE_CHECKING:
     import ast
+    from collections.abc import Iterable
 
     from griffe import Expr, Inspector, Visitor
 
@@ -339,4 +339,4 @@ def _add_if_missing(
         if current.value is None and item.value is not None:
             current.value = item.value
     else:
-        section.value.append(item)  # type: ignore [arg-type]
+        section.value.append(item)  # pyright: ignore

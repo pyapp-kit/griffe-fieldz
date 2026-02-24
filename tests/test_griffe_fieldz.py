@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import sys
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union, cast
+from typing import TYPE_CHECKING, Annotated, Literal, Optional, cast
 
 import griffe
 import pytest
@@ -127,15 +126,8 @@ def test_strip_annotated_union_forms() -> None:
     class SomeConstraint:
         pass
 
-    # Two different ways to express the same thing
-    if sys.version_info >= (3, 10):
-        # Python 3.10+ supports | syntax
-        type1 = Annotated[int, SomeConstraint()] | None
-        type2 = Annotated[int | None, SomeConstraint()]
-    else:
-        # Python 3.9 needs Union syntax
-        type1 = Union[Annotated[int, SomeConstraint()], None]
-        type2 = Annotated[Union[int, None], SomeConstraint()]
+    type1 = Annotated[int, SomeConstraint()] | None
+    type2 = Annotated[int | None, SomeConstraint()]
 
     # Without stripping, they should be different
     result1_no_strip = display_as_type(type1, modern_union=True, strip_annotated=False)
@@ -156,7 +148,7 @@ def test_strip_annotated_union_forms() -> None:
     # Test Literal and Optional types
     lit = Literal["a", "b"]
     assert "Literal" in display_as_type(lit)
-    opt = Optional[int]
+    opt = Optional[int]  # noqa
     assert "Optional" in display_as_type(opt, modern_union=False)
     assert "int | None" in display_as_type(opt, modern_union=True)
 
