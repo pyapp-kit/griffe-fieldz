@@ -114,6 +114,17 @@ class FieldzExtension(Extension):
 
     # ------------------------------
 
+    def on_class(self, *, cls: Class, **kwargs: Any) -> None:
+        """Fill in missing descriptions for inherited fields.
+
+        This runs after the full object tree is built, so griffe's
+        inheritance APIs (mro, attributes, inherited_members) work here.
+        """
+        if self.include_inherited and cls.docstring:
+            _backfill_inherited_descriptions(cls)
+
+    # ------------------------------
+
     def _inject_fields(self, griffe_obj: Object, runtime_obj: Any) -> None:
         # update the object instance with the evaluated docstring
         docstring = inspect.cleandoc(getattr(runtime_obj, "__doc__", "") or "")
@@ -134,6 +145,54 @@ class FieldzExtension(Extension):
             remove_fields_from_members=self.remove_fields_from_members,
             strip_annotated=self.strip_annotated,
         )
+
+
+def _backfill_inherited_descriptions(cls: Class) -> None:
+    """Fill in missing field descriptions from parent classes.
+
+    Uses griffe's MRO to find descriptions from parent docstring sections
+    and inherited attribute docstrings. Must be called after the full object
+    tree is built (e.g. from on_class), so that mro() works.
+    """
+    sections = cls.docstring.parsed  # pyright: ignore[reportOptionalMemberAccess]
+
+    # Collect descriptions with empty strings that we need to fill
+    empty_items: dict[str, DocstringParameter | DocstringAttribute] = {}
+    params_or_attrs = (DocstringSectionParameters, DocstringSectionAttributes)
+    for section in sections:
+        if isinstance(section, params_or_attrs):
+            for item in section.value:
+                if not item.description:
+                    empty_items[item.name] = item
+
+    if not empty_items:
+        return
+
+    # Walk parent classes looking for descriptions
+    try:
+        parents = cls.mro()
+    except ValueError:
+        return
+
+    for parent in parents:
+        # Check parent's parsed docstring sections
+        if parent.docstring:
+            for section in parent.docstring.parsed:
+                if isinstance(section, params_or_attrs):
+                    for item in section.value:
+                        if item.name in empty_items and item.description:
+                            empty_items[item.name].description = item.description
+                            del empty_items[item.name]
+        # Check parent's direct member inline docstrings
+        for name in list(empty_items):
+            if name in parent.members:
+                member = parent.members[name]
+                if member.docstring:
+                    empty_items[name].description = member.docstring.value
+                    del empty_items[name]
+
+        if not empty_items:
+            return
 
 
 def _to_annotation(

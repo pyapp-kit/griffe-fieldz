@@ -38,6 +38,27 @@ class Gt:
 
 
 @dataclass
+class ParentWithDocstringDesc:
+    """Parent with field descriptions in docstring.
+
+    Parameters:
+        x: x described in parent docstring
+    """
+
+    x: int = 1
+    y: int = field(default=2, metadata={"description": "y from metadata"})
+    z: int = 3
+    """z inline docstring"""
+
+
+@dataclass
+class ChildInheritsDocstringDesc(ParentWithDocstringDesc):
+    """Child that inherits all fields."""
+
+    pass
+
+
+@dataclass
 class WithAnnotated:
     """Class with Annotated fields."""
 
