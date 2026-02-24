@@ -171,7 +171,7 @@ def _backfill_inherited_descriptions(cls: Class) -> None:
     # Walk parent classes looking for descriptions
     try:
         parents = cls.mro()
-    except ValueError:
+    except ValueError:  # pragma: no cover
         return
 
     for parent in parents:
@@ -183,8 +183,10 @@ def _backfill_inherited_descriptions(cls: Class) -> None:
                         if item.name in empty_items and item.description:
                             empty_items[item.name].description = item.description
                             del empty_items[item.name]
-        # Check parent's direct member inline docstrings
-        for name in list(empty_items):
+        # Check parent's direct member inline docstrings.
+        # This is a fallback for parents not processed by this extension
+        # (e.g. a base class from another package). possibly unreachable
+        for name in list(empty_items):  # pragma: no cover
             if name in parent.members:
                 member = parent.members[name]
                 if member.docstring:
